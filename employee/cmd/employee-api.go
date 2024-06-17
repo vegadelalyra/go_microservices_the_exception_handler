@@ -8,6 +8,7 @@ import (
 	"github.com/vegadelalyra/go_microservices_the_exception_handler/employee/data"
 	"github.com/vegadelalyra/go_microservices_the_exception_handler/employee/delete"
 	"github.com/vegadelalyra/go_microservices_the_exception_handler/employee/get"
+	"github.com/vegadelalyra/go_microservices_the_exception_handler/employee/middlewares"
 	"github.com/vegadelalyra/go_microservices_the_exception_handler/employee/persistance"
 	"github.com/vegadelalyra/go_microservices_the_exception_handler/employee/update"
 )
@@ -21,10 +22,13 @@ func main() {
 	flag.Parse()
 	flags := data.NewFlags(*ip, *port)
 	url, _ := flags.GetApplicationUrl()
+	middlewares.InitMiddleware()
 	ginR := gin.Default()
+
 	ginR.Use(CORSMiddleware())
 	group := ginR.Group("api/employees")
 
+	group.Use(middlewares.AuthenticationMiddleware())
 	repo := getPersistanceObj()
 	registerGetRoutes(group, repo)
 	registerPutRoutes(group, repo)
@@ -34,20 +38,20 @@ func main() {
 	ginR.Run(*url)
 }
 func CORSMiddleware() gin.HandlerFunc {
-    return func(c *gin.Context) {
+	return func(c *gin.Context) {
 
-        c.Header("Access-Control-Allow-Origin", "*")
-        c.Header("Access-Control-Allow-Credentials", "true")
-        c.Header("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With")
-        c.Header("Access-Control-Allow-Methods", "POST,HEAD,PATCH, OPTIONS, GET, PUT")
+		c.Header("Access-Control-Allow-Origin", "*")
+		c.Header("Access-Control-Allow-Credentials", "true")
+		c.Header("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With")
+		c.Header("Access-Control-Allow-Methods", "POST,HEAD,PATCH, OPTIONS, GET, PUT")
 
-        if c.Request.Method == "OPTIONS" {
-            c.AbortWithStatus(204)
-            return
-        }
+		if c.Request.Method == "OPTIONS" {
+			c.AbortWithStatus(204)
+			return
+		}
 
-        c.Next()
-    }
+		c.Next()
+	}
 }
 func getPersistanceObj() persistance.IEmployeeDbContext {
 	return persistance.InitMongoDb("", "")
